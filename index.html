@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CashDash - Cash Delivered</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        :root { --primary-blue: #0052FF; --secondary-green: #28A745; --light-grey-bg: #F7F9FC; --dark-text: #212529; --light-text: #6c757d; --white: #FFFFFF; --border-color: #E9ECEF; --danger-red: #dc3545;}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--white); color: var(--dark-text); line-height: 1.6; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+        .main-header { padding: 20px 0; border-bottom: 1px solid var(--border-color); }
+        .navbar { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.8rem; font-weight: 700; color: var(--primary-blue); text-decoration: none; }
+        .hero { padding: 80px 0; text-align: center; }
+        .hero-content h1 { font-size: 3rem; font-weight: 700; margin-bottom: 15px; }
+        .hero-content p { font-size: 1.1rem; color: var(--light-text); max-width: 600px; margin: 0 auto 40px auto; }
+        .order-box { background-color: var(--white); border-radius: 12px; padding: 40px; max-width: 700px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07); text-align: left; transition: all 0.3s ease-in-out;}
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 8px; }
+        .form-group input { width: 100%; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; font-family: 'Poppins', sans-serif; }
+        .amount-options { display: flex; gap: 10px; margin-top: 10px; }
+        .amount-btn { background-color: var(--light-grey-bg); border: 1px solid var(--border-color); color: var(--dark-text); padding: 10px 15px; border-radius: 20px; cursor: pointer; font-weight: 500; flex-grow: 1; transition: all 0.2s;}
+        .amount-btn.active, .amount-btn:hover { background-color: #d4e2ff; border-color: var(--primary-blue); color: var(--primary-blue); }
+        .btn-primary { display: block; width: 100%; background-color: var(--primary-blue); color: var(--white); padding: 15px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background-color 0.3s; }
+        .btn-primary:disabled { background-color: var(--light-text); cursor: not-allowed; }
+        .status-message { padding: 15px; margin-top: 20px; border-radius: 8px; text-align: center; display: none; }
+        .status-message.success { background-color: #e9f7ec; color: var(--secondary-green); border: 1px solid var(--secondary-green);}
+        .status-message.error { background-color: #f8d7da; color: var(--danger-red); border: 1px solid var(--danger-red);}
+    </style>
+</head>
+<body>
+    <header class="main-header"><nav class="container navbar"><a href="#" class="logo">CashDash</a></nav></header>
+    <main>
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h1>Cash, delivered to your doorstep.</h1>
+                    <p>Need cash but don't want an ATM? Order now and get it delivered securely in minutes.</p>
+                </div>
+                <div class="order-box" id="order-box">
+                    <form id="order-form">
+                        <div class="form-group"><label for="amount">How much cash do you need?</label><input type="number" id="amount" placeholder="e.g., 2000" required><div class="amount-options" id="amount-options"><button type="button" class="amount-btn" data-value="500">₹500</button><button type="button" class="amount-btn" data-value="1000">₹1000</button><button type="button" class="amount-btn" data-value="2000">₹2000</button><button type="button" class="amount-btn" data-value="5000">₹5000</button></div></div>
+                        <div class="form-group"><label for="address">Where should we deliver?</label><input type="text" id="address" placeholder="Enter your full delivery address" required></div>
+                        <button type="submit" class="btn-primary" id="submit-btn">Get Cash Now</button>
+                    </form>
+                    <div id="status-message" class="status-message"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script>
+        const API_URL = 'http://127.0.0.1:5000';
+        const orderForm = document.getElementById('order-form');
+        const amountInput = document.getElementById('amount');
+        const amountOptions = document.getElementById('amount-options');
+        const submitBtn = document.getElementById('submit-btn');
+        const statusMessage = document.getElementById('status-message');
+        const orderBox = document.getElementById('order-box');
+
+        amountOptions.addEventListener('click', (event) => {
+            if (event.target.classList.contains('amount-btn')) {
+                amountInput.value = event.target.dataset.value;
+                document.querySelectorAll('.amount-btn').forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+            }
+        });
+
+        orderForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            statusMessage.style.display = 'none';
+            const orderData = { amount: amountInput.value, address: document.getElementById('address').value };
+            try {
+                const response = await fetch(`${API_URL}/order`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData) });
+                const result = await response.json();
+                if (!response.ok) { throw new Error(result.error || 'An unknown error occurred.'); }
+                orderBox.innerHTML = `<div style="text-align: center;"><h2 style="color: var(--secondary-green);">Order Placed!</h2><p style="color: var(--light-text); margin-top: 10px;">A delivery partner is on their way.</p><p style="margin-top: 30px; font-size: 1.1rem; font-weight: 500;">Your One-Time Password is:</p><p style="font-size: 2.5rem; font-weight: 700; color: var(--primary-blue); letter-spacing: 5px; margin-top: 10px;">${result.otp_for_next_step}</p><p style="margin-top: 20px; color: var(--light-text); font-size: 0.9rem;"><strong>Important:</strong> Only share this OTP with the delivery partner after you have received your cash.</p></div>`;
+            } catch (error) {
+                statusMessage.textContent = error.message;
+                statusMessage.className = `status-message error`;
+                statusMessage.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Get Cash Now';
+            }
+        });
+    </script>
+</body>
+</html>
